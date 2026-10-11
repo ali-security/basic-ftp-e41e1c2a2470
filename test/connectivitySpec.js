@@ -72,6 +72,18 @@ describe("Connectivity", function() {
         })
     })
 
+    it("rejects password with control characters without crashing", async () => {
+        await assert.rejects(() => this.client.access({
+            port: this.server.ctrlAddress.port,
+            user: "test",
+            password: "test\r\nDELE file"
+        }), {
+            message: "Invalid command: Contains control characters. (PASS ###)"
+        })
+        assert.deepEqual(this.server.receivedCommands, ["OPTS UTF8 ON", "USER test"])
+        assert.strictEqual(this.client.closed, true)
+    })
+
     it("access executes default set of commands", () => {
         this.server.handlers = {
             // Set the minimum required commands, not all default settings need to succeed.

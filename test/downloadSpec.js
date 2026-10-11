@@ -147,6 +147,18 @@ describe("Download to stream", function() {
         dataSocket.destroy(new Error("Error that should be ignored because task has completed successfully"))
     })
 
+    it("rejects resuming a path with control characters without crashing", async () => {
+        this.server.addHandlers({
+            "pasv": () => `227 Entering Passive Mode (${this.server.dataAddressForPasvResponse})`,
+            "rest": () => "350 Restarting"
+        })
+        await assert.rejects(() => this.client.downloadTo(new StringWriter(), "file.txt\r\nDELE file", 10), {
+            message: "Invalid command: Contains control characters. (RETR file.txt\r\nDELE file)"
+        })
+        assert.deepEqual(this.server.receivedCommands.slice(-1), ["REST 10"])
+        assert.strictEqual(this.client.closed, true)
+    })
+
     it("stops tracking timeout after failure")
     it("can get a directory listing")
     it("uses control host IP if suggested data connection IP using PASV is private")
